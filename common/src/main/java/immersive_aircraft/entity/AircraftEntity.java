@@ -4,6 +4,7 @@ import immersive_aircraft.config.Config;
 import immersive_aircraft.entity.misc.Trail;
 import immersive_aircraft.item.upgrade.VehicleStat;
 import immersive_aircraft.util.Utils;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -31,11 +32,11 @@ public abstract class AircraftEntity extends EngineVehicle {
     @Override
     public void tick() {
         // rolling interpolation
-        prevRoll = roll;
+        prevRoll = serverZRot;
         if (onGround()) {
-            setZRot(roll * 0.9f);
+            setZRot(serverZRot * 0.9f);
         } else {
-            setZRot(-pressingInterpolatedX.getSmooth() * getProperties().get(VehicleStat.ROLL_FACTOR));
+            //setZRot(-pressingInterpolatedX.getSmooth() * getProperties().get(VehicleStat.ROLL_FACTOR));
         }
 
         if (Double.isNaN(getDeltaMovement().x) || Double.isNaN(getDeltaMovement().y) || Double.isNaN(getDeltaMovement().z)) {
@@ -62,14 +63,20 @@ public abstract class AircraftEntity extends EngineVehicle {
 
     @Override
     protected void updateController() {
+
+        setZRot(getRoll() - pressingInterpolatedX.getSmooth() * getProperties().get(VehicleStat.ROLL_FACTOR) / 10 );
+
         // left-right
-        setYRot(getYRot() - getProperties().get(VehicleStat.YAW_SPEED) * pressingInterpolatedX.getSmooth());
+        setYRot(getYRot() - getProperties().get(VehicleStat.YAW_SPEED) * pressingInterpolatedZ.getSmooth() * Mth.sin(getRoll() * ((float) Math.PI / 180)));
 
         // forwards-backwards
         if (!onGround()) {
-            setXRot(getXRot() + getProperties().get(VehicleStat.PITCH_SPEED) * pressingInterpolatedZ.getSmooth());
+            setXRot(getXRot() + getProperties().get(VehicleStat.PITCH_SPEED) * pressingInterpolatedZ.getSmooth() * Mth.cos(getRoll() * ((float) Math.PI / 180)));
         }
+
+        // TODO: Direct Yaw control by pressingInterpolatedX
         setXRot(getXRot() * (1.0f - getProperties().getAdditive(VehicleStat.STABILIZER)));
+
     }
 
     @Override

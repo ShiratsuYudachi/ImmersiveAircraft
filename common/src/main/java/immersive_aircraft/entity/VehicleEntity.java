@@ -84,6 +84,7 @@ public abstract class VehicleEntity extends Entity {
 
     protected double serverYRot;
     protected double serverXRot;
+    protected double serverZRot;
 
     protected float movementX;
     protected float movementY;
@@ -93,8 +94,7 @@ public abstract class VehicleEntity extends Entity {
     public final InterpolatedFloat pressingInterpolatedY;
     public final InterpolatedFloat pressingInterpolatedZ;
 
-    public float roll;
-    public float prevRoll;
+    public double prevRoll;
 
     public double lastX;
     public double lastY;
@@ -107,11 +107,11 @@ public abstract class VehicleEntity extends Entity {
     private int drowning;
 
     public float getRoll() {
-        return roll;
+        return (float)serverZRot;
     }
 
     public float getRoll(float tickDelta) {
-        return Mth.lerp(tickDelta, prevRoll, getRoll());
+        return Mth.lerp(tickDelta, (float)prevRoll, getRoll());
     }
 
     @Override
@@ -122,8 +122,10 @@ public abstract class VehicleEntity extends Entity {
         super.setXRot(pitch);
     }
 
-    public void setZRot(float rot) {
-        roll = rot;
+    public void setZRot(double roll) {
+        float loops = (float) (Math.floor((roll + 180f) / 360f) * 360f);
+        roll -= loops;
+        serverZRot = roll;
     }
 
     public void boost() {
@@ -519,6 +521,7 @@ public abstract class VehicleEntity extends Entity {
         double interpolatedYaw = Mth.wrapDegrees(serverYRot - (double) getYRot());
         setYRot(getYRot() + (float) interpolatedYaw / (float) interpolationSteps);
         setXRot(getXRot() + (float) (serverXRot - (double) getXRot()) / (float) interpolationSteps);
+        //setZRot() how to sync with server?
 
         setPos(interpolatedX, interpolatedY, interpolatedZ);
         setRot(getYRot(), getXRot());
