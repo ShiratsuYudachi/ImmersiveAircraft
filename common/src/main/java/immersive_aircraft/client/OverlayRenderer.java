@@ -5,9 +5,12 @@ import immersive_aircraft.Main;
 import immersive_aircraft.config.Config;
 import immersive_aircraft.entity.EngineVehicle;
 import immersive_aircraft.entity.VehicleEntity;
+import immersive_aircraft.util.LinearAlgebraUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 public class OverlayRenderer {
     static final OverlayRenderer INSTANCE = new OverlayRenderer();
@@ -15,6 +18,7 @@ public class OverlayRenderer {
     private static final ResourceLocation ENGINE_TEX = Main.locate("textures/gui/engine.png");
     private static final ResourceLocation POWER_TEX = Main.locate("textures/gui/power.png");
     private static final ResourceLocation ICONS_TEX = Main.locate("textures/gui/icons.png");
+
 
     private float bootUp = 0.0f;
     private float lastTime = 0.0f;
@@ -51,6 +55,7 @@ public class OverlayRenderer {
             context.blit(ICONS_TEX, x, y, 10, 0, 9, 9, 64, 64);
         }
     }
+
 
     private void renderAircraftGui(Minecraft client, GuiGraphics context, float tickDelta, EngineVehicle aircraft) {
         assert client.level != null;
@@ -99,6 +104,57 @@ public class OverlayRenderer {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.5f);
             context.blit(POWER_TEX, x - 9, y - 9, (powerFrameTarget % 5) * 18, Math.floorDiv(powerFrameTarget, 5) * 18, 18, 18, 90, 90);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        int screenWidth = client.getWindow().getGuiScaledWidth();
+        int screenHeight = client.getWindow().getGuiScaledHeight();
+        int centerX = screenWidth / 2;
+        int centerY = screenHeight / 2;
+
+        int radius = 5; // 可以根据需要调整大小
+        int color = 0xFFFFFFFF; // 白色，可以根据需要更改
+        drawHollowCircle(context, centerX, centerY, radius, color, 1);
+
+        // 获取飞行器的世界坐标
+        Vec3 aircraftPos = aircraft.position();
+        aircraftPos = aircraftPos.add(0,-5,0); // hack, slight 偏移
+        System.out.println(aircraftPos.y);
+
+        // 将世界坐标转换为屏幕坐标
+        Vector3f screenPos = LinearAlgebraUtil.worldToScreenPoint(aircraftPos);
+
+        // 检查点是否在屏幕内
+        if (screenPos.x() >= 0 && screenPos.x() < screenWidth &&
+                screenPos.y() >= 0 && screenPos.y() < screenHeight) {
+            // 在飞行器的屏幕位置绘制十字
+            drawCross(context, (int)screenPos.x(), (int)screenPos.y(), radius, color, 1);
+        }
+    }
+
+    private void drawHollowCircle(GuiGraphics context, int centerX, int centerY, int radius, int color, int thickness) {
+        for (int y = -radius; y <= radius; y++) {
+            for (int x = -radius; x <= radius; x++) {
+                int distanceSquared = x * x + y * y;
+                if (distanceSquared <= radius * radius && distanceSquared >= (radius - thickness) * (radius - thickness)) {
+                    context.fill(centerX + x, centerY + y, centerX + x + 1, centerY + y + 1, color);
+                }
+            }
+        }
+    }
+
+    private void drawCross(GuiGraphics context, int centerX, int centerY, int size, int color, int thickness) {
+        // 绘制竖线
+        for (int y = -size; y <= size; y++) {
+            for (int x = -thickness / 2; x < thickness / 2 + thickness % 2; x++) {
+                context.fill(centerX + x, centerY + y, centerX + x + 1, centerY + y + 1, color);
+            }
+        }
+
+        // 绘制横线
+        for (int x = -size; x <= size; x++) {
+            for (int y = -thickness / 2; y < thickness / 2 + thickness % 2; y++) {
+                context.fill(centerX + x, centerY + y, centerX + x + 1, centerY + y + 1, color);
+            }
         }
     }
 }
