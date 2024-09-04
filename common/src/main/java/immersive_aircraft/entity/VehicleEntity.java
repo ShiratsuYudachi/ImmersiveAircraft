@@ -16,6 +16,8 @@ import immersive_aircraft.resources.bbmodel.BBAnimationVariables;
 import immersive_aircraft.util.InterpolatedFloat;
 import net.minecraft.BlockUtil;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.MouseHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -108,6 +110,9 @@ public abstract class VehicleEntity extends Entity {
     public boolean adaptPlayerRotation = true;
     private int drowning;
 
+    private double lastMouseX = 0;
+    private double lastMouseY = 0;
+
     public float getRoll() {
         return (float)serverZRot;
     }
@@ -186,6 +191,7 @@ public abstract class VehicleEntity extends Entity {
         pressingInterpolatedZ = new InterpolatedFloat(getInputInterpolationSteps());
 
         identifier = BuiltInRegistries.ENTITY_TYPE.getKey(getType());
+
 
     }
 
@@ -409,6 +415,7 @@ public abstract class VehicleEntity extends Entity {
         // interpolate
         handleClientSync();
 
+
         int boost = getBoost();
         if (boost > 0) {
             entityData.set(BOOST, boost - 1);
@@ -450,6 +457,23 @@ public abstract class VehicleEntity extends Entity {
         }
 
         tickDamageParticles();
+
+        Minecraft minecraft = Minecraft.getInstance();
+        MouseHandler mouseHandler = minecraft.mouseHandler;
+
+        double currentX = mouseHandler.xpos();
+        double currentY = mouseHandler.ypos();
+
+        double deltaX = currentX - lastMouseX;
+        double deltaY = currentY - lastMouseY;
+
+        lastMouseX = currentX;
+        lastMouseY = currentY;
+
+        setTargetPitch(getTargetPitch() + (float)deltaY * 0.07f);
+        setTargetYaw(getTargetYaw() + (float)deltaX * 0.07f);
+
+
     }
 
     private void tickDamageParticles() {
@@ -505,6 +529,14 @@ public abstract class VehicleEntity extends Entity {
                     Vec3 p = position();
                     level().playLocalSound(p.x(), p.y(), p.z(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.NEUTRAL, 1.0f, 1.0f, true);
                 }
+
+                double pitchDiff = getTargetPitch() - entity.getXRot();
+                double yawDiff = getTargetYaw() - entity.getYRot();
+
+                entity.setYRot(entity.getYRot() + (float) yawDiff * 0.05f);
+                    // 设置垂直旋转（pitch）
+                entity.setXRot(entity.getXRot() + (float) pitchDiff * 0.05f);
+
             }
         }
 
@@ -762,6 +794,10 @@ public abstract class VehicleEntity extends Entity {
                 }
             }
         }
+    }
+
+    public static boolean playerOnVihicle(Player player) {
+        return player.getVehicle() instanceof VehicleEntity;
     }
 
     @Override

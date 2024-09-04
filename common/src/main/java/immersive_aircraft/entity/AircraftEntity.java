@@ -81,6 +81,10 @@ public abstract class AircraftEntity extends EngineVehicle {
         float targetPitch = getTargetPitch();
         float targetYaw = getTargetYaw();
 
+        float yawDiff = (float) (targetYaw - getYRot());
+        float pitchDiff = (float) (targetPitch - getXRot());
+        setYRot(getYRot() + yawDiff * (float)0.1); // TODO: turning torque is larger when diff increases, should have a limit
+        setXRot(getXRot() + pitchDiff * (float)0.1); // 应该有一个最大转向角速度
 
     }
 
