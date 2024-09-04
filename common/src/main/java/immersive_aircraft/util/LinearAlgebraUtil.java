@@ -1,38 +1,64 @@
 package immersive_aircraft.util;
 
-import net.minecraft.client.Minecraft;
+
 import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
+
+import java.lang.reflect.Method;
 
 public class LinearAlgebraUtil {
 
-    /**
-     * Converts a world position to screen coordinates.
-     *
-     * @param worldPos The position in the world to convert.
-     * @return A Vector3f where x and y are the screen coordinates, and z is the depth.
-     */
-    public static Vector3f worldToScreenPoint(Vec3 worldPos) {
+    // Thanks Claude3.5 Sonnet and https://forums.minecraftforge.net/topic/88562-116solved-3d-to-2d-conversion/
+    public static Vector3f worldToScreenPoint(Vec3 worldPos, float partialTicks) {
         Minecraft minecraft = Minecraft.getInstance();
         Camera camera = minecraft.gameRenderer.getMainCamera();
 
         // Calculate the relative position to the camera
         Vec3 cameraPos = camera.getPosition();
-        Vec3 relativePos = worldPos.subtract(cameraPos);
+        Vector3f relativePos = new Vector3f(
+                (float)(worldPos.x - cameraPos.x),
+                (float)(worldPos.y - cameraPos.y),
+                (float)(worldPos.z - cameraPos.z)
+        );
 
         // Transform the relative position using the camera's rotation
-        Vector3f forward = camera.getLookVector();
-        Vector3f up = camera.getUpVector();
-        Vector3f left = camera.getLeftVector();
+        Quaternionf cameraRotation = camera.rotation();
+        cameraRotation.conjugate();
+        relativePos.rotate(cameraRotation);
 
-        float x = (float) relativePos.dot(new Vec3(left.x(), left.y(), left.z()));
-        float y = (float) relativePos.dot(new Vec3(up.x(), up.y(), up.z()));
-        float z = (float) relativePos.dot(new Vec3(forward.x(), forward.y(), forward.z()));
+        // Compensate for view bobbing
+        if (minecraft.options.bobView().get()) {
+            LocalPlayer player = minecraft.player;
+            if (player != null) {
+                float f = player.walkDist - player.walkDistO;
+                float f1 = -(player.walkDist + f * partialTicks);
+                float f2 = Mth.lerp(partialTicks, player.oBob, player.bob);
+
+                Quaternionf q2 = new Quaternionf().rotationX(Math.abs(Mth.cos(f1 * (float)Math.PI - 0.2F) * f2) * 5.0F);
+                q2.conjugate();
+                relativePos.rotate(q2);
+
+                Quaternionf q1 = new Quaternionf().rotationZ(Mth.sin(f1 * (float)Math.PI) * f2 * 3.0F);
+                q1.conjugate();
+                relativePos.rotate(q1);
+
+                Vector3f bobTranslation = new Vector3f(
+                        Mth.sin(f1 * (float)Math.PI) * f2 * 0.5F,
+                        -Math.abs(Mth.cos(f1 * (float)Math.PI) * f2),
+                        0.0f
+                );
+                bobTranslation.y = -bobTranslation.y();
+                relativePos.add(bobTranslation);
+            }
+        }
 
         // If the point is behind the camera, return an off-screen position
-        if (z <= 0) {
+        if (relativePos.z() <= 0) {
             return new Vector3f(-1, -1, -1);
         }
 
@@ -40,15 +66,26 @@ public class LinearAlgebraUtil {
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
 
-        // Get the field of view and aspect ratio
-        float fov = minecraft.options.fov().get().floatValue();
-        float aspectRatio = (float) screenWidth / (float) screenHeight;
+        // Get the field of view
+        float fov = getFov(minecraft, camera, partialTicks);
 
         // Calculate the screen position
-        float fovRad = (float) Math.toRadians(fov);
-        float screenX = (x / (z * (float) Math.tan(fovRad / 2))) * (screenWidth / 2) + (screenWidth / 2);
-        float screenY = (y / (z * (float) Math.tan(fovRad / 2) / aspectRatio)) * (screenHeight / 2) + (screenHeight / 2);
+        float halfHeight = screenHeight / 2f;
+        float scale = halfHeight / (relativePos.z() * (float)Math.tan(Math.toRadians(fov / 2)));
+        float screenX = -relativePos.x() * scale + screenWidth / 2f;
+        float screenY = -relativePos.y() * scale + screenHeight / 2f;
 
-        return new Vector3f(screenX, screenY, z);
+        return new Vector3f(screenX, screenY, relativePos.z());
+    }
+
+    private static float getFov(Minecraft minecraft, Camera camera, float partialTicks) {
+        try {
+            Method getFovMethod = minecraft.gameRenderer.getClass().getDeclaredMethod("getFov", Camera.class, float.class, boolean.class);
+            getFovMethod.setAccessible(true);
+            return (float) getFovMethod.invoke(minecraft.gameRenderer, camera, partialTicks, true);
+        } catch (Exception e) {
+            // Fallback to a default FOV if the method can't be accessed
+            return 70.0f; // You might want to adjust this default value
+        }
     }
 }
