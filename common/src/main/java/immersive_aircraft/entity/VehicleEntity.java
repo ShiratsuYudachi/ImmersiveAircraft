@@ -70,6 +70,8 @@ public abstract class VehicleEntity extends Entity {
     protected static final EntityDataAccessor<Integer> DAMAGE_WOBBLE_TICKS = SynchedEntityData.defineId(VehicleEntity.class, EntityDataSerializers.INT);
     protected static final EntityDataAccessor<Integer> DAMAGE_WOBBLE_SIDE = SynchedEntityData.defineId(VehicleEntity.class, EntityDataSerializers.INT);
     protected static final EntityDataAccessor<Float> DAMAGE_WOBBLE_STRENGTH = SynchedEntityData.defineId(VehicleEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_TARGET_YAW = SynchedEntityData.defineId(VehicleEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_TARGET_PITCH = SynchedEntityData.defineId(VehicleEntity.class, EntityDataSerializers.FLOAT);
 
     protected final boolean canExplodeOnCrash;
 
@@ -128,6 +130,22 @@ public abstract class VehicleEntity extends Entity {
         serverZRot = roll;
     }
 
+    public float getTargetYaw() {
+        return this.entityData.get(DATA_TARGET_YAW);
+    }
+
+    public void setTargetYaw(float targetYaw) {
+        this.entityData.set(DATA_TARGET_YAW, targetYaw);
+    }
+
+    public float getTargetPitch() {
+        return this.entityData.get(DATA_TARGET_PITCH);
+    }
+
+    public void setTargetPitch(float targetPitch) {
+        this.entityData.set(DATA_TARGET_PITCH, targetPitch);
+    }
+
     public void boost() {
         boost(100);
     }
@@ -168,6 +186,7 @@ public abstract class VehicleEntity extends Entity {
         pressingInterpolatedZ = new InterpolatedFloat(getInputInterpolationSteps());
 
         identifier = BuiltInRegistries.ENTITY_TYPE.getKey(getType());
+
     }
 
     public void fromItemStack(ItemStack stack) {
@@ -198,6 +217,8 @@ public abstract class VehicleEntity extends Entity {
         entityData.define(DAMAGE_WOBBLE_STRENGTH, 0.0f);
         entityData.define(DATA_HEALTH, 1.0f);
         entityData.define(BOOST, 0);
+        entityData.define(DATA_TARGET_YAW, 0f);
+        entityData.define(DATA_TARGET_PITCH, 0f);
     }
 
     @Override
@@ -711,6 +732,8 @@ public abstract class VehicleEntity extends Entity {
             return InteractionResult.PASS;
         }
         if (!level().isClientSide) {
+            this.setTargetYaw(getYRot());
+            this.setTargetPitch(getXRot());
             return player.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;
         }
         if (hasPassenger(player)) {

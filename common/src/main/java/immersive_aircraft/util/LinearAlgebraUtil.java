@@ -27,8 +27,7 @@ public class LinearAlgebraUtil {
         );
 
         // Transform the relative position using the camera's rotation
-        Quaternionf cameraRotation = camera.rotation();
-        cameraRotation.conjugate();
+        Quaternionf cameraRotation = new Quaternionf(camera.rotation()).conjugate();
         relativePos.rotate(cameraRotation);
 
         // Compensate for view bobbing
@@ -78,6 +77,16 @@ public class LinearAlgebraUtil {
         return new Vector3f(screenX, screenY, relativePos.z());
     }
 
+    public static Vec3 calculateViewVector(float xRot, float yRot) {
+        float f = xRot * 0.017453292F;
+        float g = -yRot * 0.017453292F;
+        float h = Mth.cos(g);
+        float i = Mth.sin(g);
+        float j = Mth.cos(f);
+        float k = Mth.sin(f);
+        return new Vec3((double)(i * j), (double)(-k), (double)(h * j));
+    }
+
     private static float getFov(Minecraft minecraft, Camera camera, float partialTicks) {
         try {
             Method getFovMethod = minecraft.gameRenderer.getClass().getDeclaredMethod("getFov", Camera.class, float.class, boolean.class);
@@ -88,4 +97,6 @@ public class LinearAlgebraUtil {
             return 70.0f; // You might want to adjust this default value
         }
     }
+
+
 }

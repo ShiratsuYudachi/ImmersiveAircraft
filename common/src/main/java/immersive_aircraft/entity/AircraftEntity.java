@@ -66,16 +66,21 @@ public abstract class AircraftEntity extends EngineVehicle {
 
         setZRot(getRoll() - pressingInterpolatedX.getSmooth() * getProperties().get(VehicleStat.ROLL_FACTOR) / 10 );
 
-        // left-right
+        // world frame yaw
         setYRot(getYRot() - getProperties().get(VehicleStat.YAW_SPEED) * pressingInterpolatedZ.getSmooth() * Mth.sin(getRoll() * ((float) Math.PI / 180)));
 
-        // forwards-backwards
+        // world frame pitch
         if (!onGround()) {
             setXRot(getXRot() + getProperties().get(VehicleStat.PITCH_SPEED) * pressingInterpolatedZ.getSmooth() * Mth.cos(getRoll() * ((float) Math.PI / 180)));
         }
 
         // TODO: Direct Yaw control by pressingInterpolatedX
         setXRot(getXRot() * (1.0f - getProperties().getAdditive(VehicleStat.STABILIZER)));
+
+        // Auto Pilot to Target Pitch & Yaw
+        float targetPitch = getTargetPitch();
+        float targetYaw = getTargetYaw();
+
 
     }
 

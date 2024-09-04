@@ -12,6 +12,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
+import javax.sound.sampled.Line;
+
 public class OverlayRenderer {
     static final OverlayRenderer INSTANCE = new OverlayRenderer();
 
@@ -22,6 +24,8 @@ public class OverlayRenderer {
 
     private float bootUp = 0.0f;
     private float lastTime = 0.0f;
+
+    private boolean updateTarget = false;
 
     public static void renderOverlay(GuiGraphics context, float tickDelta) {
         Minecraft client = Minecraft.getInstance();
@@ -113,27 +117,56 @@ public class OverlayRenderer {
 
         int radius = 5; // 可以根据需要调整大小
         int color = 0xFFFFFFFF; // 白色，可以根据需要更改
-        drawHollowCircle(context, centerX, centerY, radius, color, 1);
 
-        // 获取飞行器的世界坐标
+
         Vec3 aircraftPos = aircraft.position();
+        double targetPitch = aircraft.getTargetPitch();
+        double targetYaw = aircraft.getTargetYaw();
         Vec3 lookVector = aircraft.getLookAngle();
 
-        // 将位置沿着视线方向向前移动 5 个方块
-        aircraftPos = aircraftPos.add(lookVector.scale(100));
+        Vec3 targetRotationVector = LinearAlgebraUtil.calculateViewVector((float) targetPitch, (float) targetYaw);
+        float frameTime = client.getFrameTime();
+
+
+        Vec3 targetAimingPositionVector = aircraftPos.add(targetRotationVector.scale(100));
+        Vector3f screenTargetPos = LinearAlgebraUtil.worldToScreenPoint(targetAimingPositionVector, frameTime);
+        drawHollowCircle(context, (int)screenTargetPos.x(), (int)screenTargetPos.y(), radius, color, 1);
+
+        Vec3 currentAimingPositionVector = aircraftPos.add(lookVector.scale(100));
+        Vector3f screenCurrentPos = LinearAlgebraUtil.worldToScreenPoint(currentAimingPositionVector, frameTime);
+        drawCross(context, (int)screenCurrentPos.x(), (int)screenCurrentPos.y(), radius, color, 1);
+
+
+
+
+
+
+
+
+
+
+        // render target crosshair
+
+
+
+
+        // 将位置沿着视线方向向前移动 100 个方块
+
         //aircraftPos = aircraftPos.add(0,-5,0); // hack, slight 偏移
         //System.out.println(aircraftPos.y);
 
         // 将世界坐标转换为屏幕坐标
-        Vector3f screenPos = LinearAlgebraUtil.worldToScreenPoint(aircraftPos, client.getFrameTime());
+
 
         // 检查点是否在屏幕内
-        if (screenPos.x() >= 0 && screenPos.x() < screenWidth &&
-                screenPos.y() >= 0 && screenPos.y() < screenHeight) {
-            // 在飞行器的屏幕位置绘制十字
-            drawCross(context, (int)screenPos.x(), (int)screenPos.y(), radius, color, 1);
-            System.out.println("x:"+screenPos.x()+", y:"+screenPos.y());
-        }
+//        if (screenCurrentPos.x() >= 0 && screenCurrentPos.x() < screenWidth &&
+//                screenCurrentPos.y() >= 0 && screenCurrentPos.y() < screenHeight) {
+//            // 在飞行器的屏幕位置绘制十字
+//
+//        }
+
+//        System.out.println("x:"+screenCurrentPos.x()+", y:"+screenCurrentPos.y());
+
     }
 
     private void drawHollowCircle(GuiGraphics context, int centerX, int centerY, int radius, int color, int thickness) {
