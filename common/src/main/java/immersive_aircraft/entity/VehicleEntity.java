@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static immersive_aircraft.util.LinearAlgebraUtil.angleDifference;
+import static java.lang.Math.abs;
 
 /**
  * Abstract vehicle, which handles player input, collisions, passengers and destruction
@@ -114,6 +115,8 @@ public abstract class VehicleEntity extends Entity {
 
     private double lastMouseX = 0;
     private double lastMouseY = 0;
+    private double lastMouseDeltaX = 0;
+    private double lastMouseDeltaY = 0;
 
     public float getRoll() {
         return (float)serverZRot;
@@ -484,15 +487,35 @@ public abstract class VehicleEntity extends Entity {
 
         double currentX = mouseHandler.xpos();
         double currentY = mouseHandler.ypos();
-
         double deltaX = currentX - lastMouseX;
         double deltaY = currentY - lastMouseY;
-
         lastMouseX = currentX;
         lastMouseY = currentY;
 
-        setTargetPitch(getTargetPitch() + (float)deltaY * 0.07f);
-        setTargetYaw(getTargetYaw() + (float)deltaX * 0.07f);
+        double deltaDeltaX = deltaX - lastMouseDeltaX;
+        double deltaDeltaY = deltaY - lastMouseDeltaY;
+
+        lastMouseDeltaX = deltaX;
+        lastMouseDeltaY = deltaY;
+        
+        // check for sudden change, like pause&resume the game or open inventory
+        if (minecraft.screen == null &&
+                minecraft.player != null&&
+                Math.abs(deltaDeltaX) < 600 &&
+                Math.abs(deltaDeltaY) < 600) { // TODO: configurable
+            float sensitivity = 0.07f; // TODO: configurable
+            setTargetPitch(getTargetPitch() + (float) deltaY * sensitivity);
+            setTargetYaw(getTargetYaw() + (float) deltaX * sensitivity);
+            lastMouseX = currentX;
+            lastMouseY = currentY;
+            lastMouseDeltaX = deltaX;
+            lastMouseDeltaY = deltaY;
+        }else {
+            lastMouseX = mouseHandler.xpos();
+            lastMouseY = mouseHandler.ypos();
+            lastMouseDeltaX = 0;
+            lastMouseDeltaY = 0;
+        }
 
 
     }
@@ -668,7 +691,7 @@ public abstract class VehicleEntity extends Entity {
         float yaw = getYRot() + 90.0f;
         float x = -Mth.sin(yaw * ((float) Math.PI / 180));
         float z = Mth.cos(yaw * ((float) Math.PI / 180));
-        float n = Math.max(Math.abs(x), Math.abs(z));
+        float n = Math.max(abs(x), abs(z));
         return new Vec3((double) x * offset / (double) n, 0.0, (double) z * offset / (double) n);
     }
 
@@ -810,7 +833,7 @@ public abstract class VehicleEntity extends Entity {
             double maxPossibleError = movement.length();
             double error = prediction.distanceTo(position());
             if (error <= maxPossibleError) {
-                float collision = (float) (error - (verticalCollision ? Math.abs(getGravity()) : 0.0)) - 0.05f;
+                float collision = (float) (error - (verticalCollision ? abs(getGravity()) : 0.0)) - 0.05f;
                 if (collision > 0) {
                     float repeat = 1.0f - (getDamageWobbleTicks() + 1) / 10.0f;
                     if (repeat > 0.0001f) {
