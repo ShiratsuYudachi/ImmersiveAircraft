@@ -118,54 +118,13 @@ public class OverlayRenderer {
         int radius = 5; // 可以根据需要调整大小
         int color = 0xFFFFFFFF; // 白色，可以根据需要更改
 
-
-        Vec3 aircraftPos = aircraft.position();
-        double targetPitch = aircraft.getTargetPitch();
-        double targetYaw = aircraft.getTargetYaw();
-        Vec3 lookVector = aircraft.getLookAngle();
-
-        Vec3 targetRotationVector = LinearAlgebraUtil.calculateViewVector((float) targetPitch, (float) targetYaw);
         float frameTime = client.getFrameTime();
 
-
-        Vec3 targetAimingPositionVector = aircraftPos.add(targetRotationVector.scale(100));
-        Vector3f screenTargetPos = LinearAlgebraUtil.worldToScreenPoint(targetAimingPositionVector, frameTime);
+        Vector3f screenTargetPos = LinearAlgebraUtil.worldToScreenPoint(aircraft.getTargetAimmingPosition(), frameTime);
         drawHollowCircle(context, (int)screenTargetPos.x(), (int)screenTargetPos.y(), radius, color, 1);
 
-        Vec3 currentAimingPositionVector = aircraftPos.add(lookVector.scale(100));
-        Vector3f screenCurrentPos = LinearAlgebraUtil.worldToScreenPoint(currentAimingPositionVector, frameTime);
+        Vector3f screenCurrentPos = LinearAlgebraUtil.worldToScreenPoint(aircraft.getCurrentAimmingPosition(), frameTime);
         drawCross(context, (int)screenCurrentPos.x(), (int)screenCurrentPos.y(), radius, color, 1);
-
-
-
-
-
-
-
-
-
-
-        // render target crosshair
-
-
-
-
-        // 将位置沿着视线方向向前移动 100 个方块
-
-        //aircraftPos = aircraftPos.add(0,-5,0); // hack, slight 偏移
-        //System.out.println(aircraftPos.y);
-
-        // 将世界坐标转换为屏幕坐标
-
-
-        // 检查点是否在屏幕内
-//        if (screenCurrentPos.x() >= 0 && screenCurrentPos.x() < screenWidth &&
-//                screenCurrentPos.y() >= 0 && screenCurrentPos.y() < screenHeight) {
-//            // 在飞行器的屏幕位置绘制十字
-//
-//        }
-
-//        System.out.println("x:"+screenCurrentPos.x()+", y:"+screenCurrentPos.y());
 
     }
 

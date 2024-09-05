@@ -14,8 +14,10 @@ import immersive_aircraft.network.c2s.CollisionMessage;
 import immersive_aircraft.network.c2s.CommandMessage;
 import immersive_aircraft.resources.bbmodel.BBAnimationVariables;
 import immersive_aircraft.util.InterpolatedFloat;
+import immersive_aircraft.util.LinearAlgebraUtil;
 import net.minecraft.BlockUtil;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.core.BlockPos;
@@ -53,13 +55,13 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.*;
 
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
+
+import static immersive_aircraft.util.LinearAlgebraUtil.angleDifference;
 
 /**
  * Abstract vehicle, which handles player input, collisions, passengers and destruction
@@ -150,6 +152,25 @@ public abstract class VehicleEntity extends Entity {
     public void setTargetPitch(float targetPitch) {
         this.entityData.set(DATA_TARGET_PITCH, targetPitch);
     }
+
+    // The position that used to draw the Cirle reticle
+    public Vec3 getTargetAimmingPosition(){
+        Vec3 targetRotationVector = LinearAlgebraUtil.calculateViewVector(getTargetPitch(), getTargetYaw());
+        return this.position().add(targetRotationVector.scale(100)); // TODO: configurable
+    }
+
+    // The position that used to draw the Cross reticle
+    public Vec3 getCurrentAimmingPosition(){
+        Vec3 lookVector = this.getLookAngle();
+        return this.position().add(lookVector.scale(100)); // TODO: configurable
+    }
+
+    public static Vec3 getAimmingPosition(Entity entity, float pitch, float yaw){
+        Vec3 lookVector = LinearAlgebraUtil.calculateViewVector(pitch, yaw);
+        return entity.position().add(lookVector.scale(100)); // TODO: configurable
+    }
+
+
 
     public void boost() {
         boost(100);
@@ -530,12 +551,29 @@ public abstract class VehicleEntity extends Entity {
                     level().playLocalSound(p.x(), p.y(), p.z(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.NEUTRAL, 1.0f, 1.0f, true);
                 }
 
-                double pitchDiff = getTargetPitch() - entity.getXRot();
-                double yawDiff = getTargetYaw() - entity.getYRot();
+                Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+                Vector2f cameraTargetEuler = LinearAlgebraUtil.getLookAngles(camera.getPosition(), getTargetAimmingPosition());
+                double pitchDiff = angleDifference(cameraTargetEuler.x, entity.getXRot());
+
+                double yawDiff = angleDifference(cameraTargetEuler.y, entity.getYRot());
+
+                //print target aimming pos
+                System.out.println("target aimming pos: " + getTargetAimmingPosition());
 
                 entity.setYRot(entity.getYRot() + (float) yawDiff * 0.05f);
                     // 设置垂直旋转（pitch）
                 entity.setXRot(entity.getXRot() + (float) pitchDiff * 0.05f);
+
+
+                // Fixed target position control
+//                Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+//                float cameraPitch = camera.getXRot();
+//                float cameraYaw = camera.getYRot();
+//                Vec3 cameraAimmingPosition = getAimmingPosition(player, cameraPitch, cameraYaw);
+//                Vector2f targetEuler = LinearAlgebraUtil.getLookAngles(this.position(), cameraAimmingPosition);
+//
+//                setTargetPitch(targetEuler.x);
+//                setTargetYaw(targetEuler.y);
 
             }
         }

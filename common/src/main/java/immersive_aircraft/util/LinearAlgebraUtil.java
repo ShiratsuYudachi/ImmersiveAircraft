@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.joml.Vector2f;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 
@@ -77,6 +78,17 @@ public class LinearAlgebraUtil {
         return new Vector3f(screenX, screenY, relativePos.z());
     }
 
+    private static float getFov(Minecraft minecraft, Camera camera, float partialTicks) {
+        try {
+            Method getFovMethod = minecraft.gameRenderer.getClass().getDeclaredMethod("getFov", Camera.class, float.class, boolean.class);
+            getFovMethod.setAccessible(true);
+            return (float) getFovMethod.invoke(minecraft.gameRenderer, camera, partialTicks, true);
+        } catch (Exception e) {
+            // Fallback to a default FOV if the method can't be accessed
+            return 70.0f; // You might want to adjust this default value
+        }
+    }
+
     public static Vec3 calculateViewVector(float xRot, float yRot) {
         float f = xRot * 0.017453292F;
         float g = -yRot * 0.017453292F;
@@ -87,15 +99,36 @@ public class LinearAlgebraUtil {
         return new Vec3((double)(i * j), (double)(-k), (double)(h * j));
     }
 
-    private static float getFov(Minecraft minecraft, Camera camera, float partialTicks) {
-        try {
-            Method getFovMethod = minecraft.gameRenderer.getClass().getDeclaredMethod("getFov", Camera.class, float.class, boolean.class);
-            getFovMethod.setAccessible(true);
-            return (float) getFovMethod.invoke(minecraft.gameRenderer, camera, partialTicks, true);
-        } catch (Exception e) {
-            // Fallback to a default FOV if the method can't be accessed
-            return 70.0f; // You might want to adjust this default value
-        }
+    /**
+     * Calculate the pitch and yaw angles to look from one point to another
+     * @param from From Coordinate
+     * @param to To Coordinate
+     * @return Vector2f, x: pitch, y: yaw, unit: degree
+     */
+    public static Vector2f getLookAngles(Vec3 from, Vec3 to) {
+        double dx = to.x - from.x;
+        double dy = to.y - from.y;
+        double dz = to.z - from.z;
+
+        double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+
+        float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontalDistance));
+
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+
+        yaw = (yaw % 360 + 360) % 360;
+
+        return new Vector2f(pitch, yaw);
+    }
+
+    public static double angleDifference(double angle1, double angle2) {
+        double diff = (angle1 - angle2 + 180) % 360 - 180;
+        return diff < -180 ? diff + 360 : diff;
+    }
+
+    // limit the angle to be within the range of [min, max]
+    public static float clampAngle(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 
 
