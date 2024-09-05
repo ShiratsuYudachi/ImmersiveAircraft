@@ -5,10 +5,12 @@ import immersive_aircraft.Main;
 import immersive_aircraft.config.Config;
 import immersive_aircraft.entity.EngineVehicle;
 import immersive_aircraft.entity.VehicleEntity;
+import immersive_aircraft.util.InterpolatedFloat;
 import immersive_aircraft.util.LinearAlgebraUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -25,7 +27,10 @@ public class OverlayRenderer {
     private float bootUp = 0.0f;
     private float lastTime = 0.0f;
 
-    private boolean updateTarget = false;
+    private InterpolatedFloat interpolatedTargetReticleX = new InterpolatedFloat();
+    private InterpolatedFloat interpolatedTargetReticleY = new InterpolatedFloat();
+    private InterpolatedFloat interpolatedCurrentReticleX = new InterpolatedFloat();
+    private InterpolatedFloat interpolatedCurrentReticleY = new InterpolatedFloat();
 
     public static void renderOverlay(GuiGraphics context, float tickDelta) {
         Minecraft client = Minecraft.getInstance();
@@ -120,11 +125,16 @@ public class OverlayRenderer {
 
         float frameTime = client.getFrameTime();
 
+
         Vector3f screenTargetPos = LinearAlgebraUtil.worldToScreenPoint(aircraft.getTargetAimmingPosition(), frameTime);
-        drawHollowCircle(context, (int)screenTargetPos.x(), (int)screenTargetPos.y(), radius, color, 1);
+        interpolatedTargetReticleX.update(screenTargetPos.x());
+        interpolatedTargetReticleY.update(screenTargetPos.y());
+        drawHollowCircle(context, (int)interpolatedTargetReticleX.getSmooth(frameTime), (int)interpolatedTargetReticleY.getSmooth(frameTime), radius, color, 1);
 
         Vector3f screenCurrentPos = LinearAlgebraUtil.worldToScreenPoint(aircraft.getCurrentAimmingPosition(), frameTime);
-        drawCross(context, (int)screenCurrentPos.x(), (int)screenCurrentPos.y(), radius, color, 1);
+        interpolatedCurrentReticleX.update(screenCurrentPos.x());
+        interpolatedCurrentReticleY.update(screenCurrentPos.y());
+        drawCross(context, (int)interpolatedCurrentReticleX.getSmooth(frameTime), (int)interpolatedCurrentReticleY.getSmooth(frameTime), radius, color, 1);
 
     }
 

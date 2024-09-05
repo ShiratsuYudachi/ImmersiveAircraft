@@ -552,16 +552,16 @@ public abstract class VehicleEntity extends Entity {
                 }
 
                 Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-                Vector2f cameraTargetEuler = LinearAlgebraUtil.getLookAngles(camera.getPosition(), getTargetAimmingPosition());
+                Vec3 cameraPosition = camera.getPosition();
+                Vector2f cameraTargetEuler = LinearAlgebraUtil.getLookAngles(cameraPosition, getTargetAimmingPosition());
                 double pitchDiff = angleDifference(cameraTargetEuler.x, entity.getXRot());
 
                 double yawDiff = angleDifference(cameraTargetEuler.y, entity.getYRot());
 
                 //print target aimming pos
-                System.out.println("target aimming pos: " + getTargetAimmingPosition());
+                //System.out.println("target aimming pos: " + getTargetAimmingPosition());
 
                 entity.setYRot(entity.getYRot() + (float) yawDiff * 0.05f);
-                    // 设置垂直旋转（pitch）
                 entity.setXRot(entity.getXRot() + (float) pitchDiff * 0.05f);
 
 
