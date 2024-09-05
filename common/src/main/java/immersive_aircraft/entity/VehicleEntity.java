@@ -551,18 +551,6 @@ public abstract class VehicleEntity extends Entity {
                     level().playLocalSound(p.x(), p.y(), p.z(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.NEUTRAL, 1.0f, 1.0f, true);
                 }
 
-                Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-                Vec3 cameraPosition = camera.getPosition();
-                Vector2f cameraTargetEuler = LinearAlgebraUtil.getLookAngles(cameraPosition, getTargetAimmingPosition());
-                double pitchDiff = angleDifference(cameraTargetEuler.x, entity.getXRot());
-
-                double yawDiff = angleDifference(cameraTargetEuler.y, entity.getYRot());
-
-                //print target aimming pos
-                //System.out.println("target aimming pos: " + getTargetAimmingPosition());
-
-                entity.setYRot(entity.getYRot() + (float) yawDiff * 0.05f);
-                entity.setXRot(entity.getXRot() + (float) pitchDiff * 0.05f);
 
 
                 // Fixed target position control

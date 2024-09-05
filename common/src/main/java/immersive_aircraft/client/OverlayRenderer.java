@@ -7,14 +7,20 @@ import immersive_aircraft.entity.EngineVehicle;
 import immersive_aircraft.entity.VehicleEntity;
 import immersive_aircraft.util.InterpolatedFloat;
 import immersive_aircraft.util.LinearAlgebraUtil;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 
 import javax.sound.sampled.Line;
+
+import static immersive_aircraft.util.LinearAlgebraUtil.angleDifference;
 
 public class OverlayRenderer {
     static final OverlayRenderer INSTANCE = new OverlayRenderer();
@@ -136,6 +142,16 @@ public class OverlayRenderer {
         interpolatedCurrentReticleY.update(screenCurrentPos.y());
         drawCross(context, (int)interpolatedCurrentReticleX.getSmooth(frameTime), (int)interpolatedCurrentReticleY.getSmooth(frameTime), radius, color, 1);
 
+
+        // update camera
+        // TODO: put in seperate class
+        Player player = client.player;
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Vec3 cameraPosition = camera.getPosition();
+        Vector2f cameraTargetEuler = LinearAlgebraUtil.getLookAngles(cameraPosition, aircraft.getTargetAimmingPosition());
+        double pitchDiff = angleDifference(cameraTargetEuler.x, player.getXRot());
+
+        player.setXRot(player.getXRot() + (float) pitchDiff * 0.02f);
     }
 
     private void drawHollowCircle(GuiGraphics context, int centerX, int centerY, int radius, int color, int thickness) {
